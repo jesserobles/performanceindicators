@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style> /* set the CSS */
+
+.line {
+  fill: none;
+  stroke: black;
+  stroke-width: 2px;
+}
+.area-green {
+  fill: rgb(73, 190, 73);
+}
+.area-white {
+    fill: white;
+}
+.area-yellow {
+    fill: rgb(255, 255, 0);
+}
+.area-red {
+    fill: rgb(255, 55, 55);
+}
+</style>
+<body>
+
+<!-- load the d3.js library -->    	
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+
+// set the dimensions and margins of the graph
+var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+// parse the date / time
+var parseDate = d3.timeParse("%m/%d/%Y");
+
+// set the ranges
+var x = d3.scaleTime().range([0, width]);
+var y = d3.scaleLinear().range([0, height]);
+
+// set PI thresholds
+var whiteThreshold = 3;
+var yellowThreshold = 6;
+var redThreshold = 25;
+var bottom = redThreshold + 1;
+
+var xAxis = d3.axisBottom(x),
+    yAxis = d3.axisLeft(y);
+
+// define the areas
+// Green area
+var greenArea = d3.area()
+    .x(function(d) { return x(d.Date); })
+    .y0(0)
+    .y1(function(d) { return y(whiteThreshold); });
+
+// White area
+var whiteArea = d3.area()
+    .x(function(d) { return x(d.Date); })
+    .y0(function(d) { return y(whiteThreshold); })
+    .y1(function(d) { return y(yellowThreshold); });
+
+// Yellow area
+var yellowArea = d3.area()
+    .x(function(d) { return x(d.Date); })
+    .y0(function(d) { return y(yellowThreshold); })
+    .y1(function(d) { return y(redThreshold); });
+
+// Red area
+var redArea = d3.area()
+    .x(function(d) { return x(d.Date); })
+    .y0(function(d) { return y(redThreshold); })
+    .y1(height);
+
+// define the line
+var valueline = d3.line()
+    .x(function(d) { return x(d.Date); })
+    .y(function(d) { return y(d.Value); });
+
+// append the svg obgect to the body of the page
+// appends a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+svg.append("defs").append("clipPath")
+    .attr("id", "clip")
+  .append("rect")
+    .attr("width", width)
+    .attr("height", height);
+
+var g = svg.append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+// Get the data
+d3.csv("data.csv", function(error, data) {
+  if (error) throw error;
+
+  // format the data
+  data.forEach(function(d) {
+      d.Date = parseDate(d.Date);
+      d.Value = +d.Value;
+  });
+
+  // Scale the range of the data
+  x.domain(d3.extent(data, function(d) { return d.Date; }));
+  y.domain([0, bottom]);
+//   y.domain([0, d3.max(data, function(d) { return d.Value; })]);
+  // add the area
+  svg.append("path")
+      .data([data])
+      .attr("class", "area-green")
+      .attr("d", greenArea);
+//   svg.append("rect")
+//       .attr("x", 0)
+//       .attr("y", 0)
+//       .attr("height", y(whiteThreshold))
+//       .attr("width", width)
+//       .style("stroke", "black")
+//       .style("fill", "none")
+//       .style("stroke-width", 1);
+
+  svg.append("path")
+      .data([data])
+      .attr("class", "area-white")
+      .attr("d", whiteArea);
+//   svg.append("rect")
+//       .attr("x", 0)
+//       .attr("y", y(whiteThreshold))
+//       .attr("height", y(yellowThreshold - whiteThreshold))
+//       .attr("width", width)
+//       .style("stroke", "black")
+//       .style("fill", "none")
+//       .style("stroke-width", 1);
+
+  svg.append("path")
+      .data([data])
+      .attr("class", "area-yellow")
+      .attr("d", yellowArea);
+//   svg.append("rect")
+//       .attr("x", 0)
+//       .attr("y", y(yellowThreshold))
+//       .attr("height", y(redThreshold - yellowThreshold))
+//       .attr("width", width)
+//       .style("stroke", "black")
+//       .style("fill", "none")
+//       .style("stroke-width", 1);
+
+  svg.append("path")
+      .data([data])
+      .attr("class", "area-red")
+      .attr("d", redArea);
+//   svg.append("rect")
+//       .attr("x", 0)
+//       .attr("y", y(redThreshold))
+//       .attr("height", y(bottom - redThreshold))
+//       .attr("width", width)
+//       .style("stroke", "black")
+//       .style("fill", "none")
+//       .style("stroke-width", 1);
+
+
+  // Add the valueline path.
+  svg.append("path")
+      .datum(data)
+      .attr("class", "line")
+      .attr("d", valueline);
+  
+  svg.append("g")
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "axis axis--y")
+      .call(yAxis);
+
+
+});
+
+</script>
+</body>
